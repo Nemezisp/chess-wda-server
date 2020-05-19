@@ -126,7 +126,6 @@ io.on('connection', (client) => {
         stopTimer(client.id)
         client.to(users[client.id].currentRoom).emit('promotion', start, target, piece)
         startTimer(users[client.id].opponentId)
-        client.to(users[client.id].currentRoom).emit('changePlayer')
     })
 
     client.on('changePlayer', () => {
