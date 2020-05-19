@@ -89,8 +89,11 @@ io.on('connection', (client) => {
         users[id].inPlay = true
         users[client.id].inPlay = true
 
-        io.to(client.id).emit('startGame', users[client.id].playerNumber, users[id].pieces, users[id].username)
-        io.to(id).emit('startGame', users[id].playerNumber, users[client.id].pieces, users[client.id].username)
+        let firstPlayerPieces = users[id].pieces.map(piece => piece.replace(/\s/g, "").toLowerCase())
+        let secondPlayerPieces = users[client.id].pieces.map(piece => piece.replace(/\s/g, "").toLowerCase())
+
+        io.to(client.id).emit('startGame', users[client.id].playerNumber, firstPlayerPieces, users[id].username)
+        io.to(id).emit('startGame', users[id].playerNumber, secondPlayerPieces, users[client.id].username)
 
         io.to(client.id).emit('setStartingTime', milisecondsToTime(users[client.id].time))
         io.to(id).emit('setStartingTime', milisecondsToTime(users[id].time))
