@@ -7,8 +7,7 @@
   },
   "main": "socket-server.js",
   "scripts": {
-    "start": "node socket-server.js",
-    "postinstall": "npm run build"
+    "start": "node socket-server.js"
   },
   "dependencies": {
     "compression": "^1.7.4",
