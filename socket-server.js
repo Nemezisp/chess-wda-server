@@ -138,6 +138,8 @@ io.on('connection', (client) => {
 
     client.on('resign', gameResult => {
         client.to(users[client.id].currentRoom).emit('resign', gameResult)
+        users[client.id].gameEnded = true
+        users[users[client.id].opponentId].gameEnded = true
         stopTimer(client.id)
         stopTimer(users[client.id].opponentId)
     })
@@ -146,14 +148,22 @@ io.on('connection', (client) => {
         client.to(users[client.id].currentRoom).emit('drawOffer')
     })
 
+    client.on('gameEnded', () => {
+        users[client.id].gameEnded = true
+        users[users[client.id].opponentId].gameEnded = true
+    })
+
     client.on('drawOfferAccepted', () => {
         client.to(users[client.id].currentRoom).emit('drawOfferAccepted')
         stopTimer(client.id)
         stopTimer(users[client.id].opponentId)
+        users[users[client.id].opponentId].gameEnded = true
+        users[client.id].gameEnded = true
     })
 
     client.on('leaveGame', () => {
-        client.to(users[client.id].currentRoom).emit('userLeftGame')
+        let gameEnded = users[users[client.id].opponentId] ? users[users[client.id].opponentId].gameEnded : true
+        client.to(users[client.id].currentRoom).emit('userLeftGame', gameEnded)
         stopTimer(client.id)
         stopTimer(users[client.id].opponentId)
         io.sockets.connected[client.id].leave(users[client.id].currentRoom)
@@ -161,6 +171,7 @@ io.on('connection', (client) => {
         users[client.id].inPlay = false
         users[client.id].currentRoom = null
         users[client.id].playerNumber = null
+        users[client.id].gameEnded = false
         if (users[client.id].opponentId) {
             users[users[client.id].opponentId].opponentId = null
         }
