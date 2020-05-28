@@ -15,6 +15,7 @@ let users = {};
 let gameNumber = 1;
 let rooms = [];
 let timers = {};
+let serverActive = false;
 
 app.use(cors())
 
@@ -50,6 +51,12 @@ let stopTimer = (id) => {
 }
 
 io.on('connection', (client) => {
+    client.on('activate-server', () => {
+        if (!serverActive) {
+            serverActive = true
+        }
+    })
+
     client.on('registration', (username, armyName, pieceNames, prefferedTime) => {
         users[client.id] = {'username': username, 'army': armyName, 'pieces' : pieceNames, 'inPlay' : false, 'id' : client.id,
                             'prefferedTime' : prefferedTime}
