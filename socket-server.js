@@ -51,12 +51,6 @@ let stopTimer = (id) => {
 }
 
 io.on('connection', (client) => {
-    client.on('activate-server', () => {
-        if (!serverActive) {
-            serverActive = true
-        }
-    })
-
     client.on('registration', (username, armyName, pieceNames, prefferedTime) => {
         users[client.id] = {'username': username, 'army': armyName, 'pieces' : pieceNames, 'inPlay' : false, 'id' : client.id,
                             'prefferedTime' : prefferedTime}
