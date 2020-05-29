@@ -54,6 +54,7 @@ io.on('connection', (client) => {
     client.on('registration', (username, armyName, pieceNames, prefferedTime) => {
         users[client.id] = {'username': username, 'army': armyName, 'pieces' : pieceNames, 'inPlay' : false, 'id' : client.id,
                             'prefferedTime' : prefferedTime}
+        to.to(client.id).emit('register', client.id)
         io.emit('updateUsers', Object.values(users))
     })
 
