@@ -1,22 +1,29 @@
 const express = require('express');
-const socketIo = require("socket.io");
+const { Server } = require('socket.io'); 
 const cors = require('cors');
-const path = require('path');
 const compression = require('compression')
 
 const port = process.env.PORT || 5000;
 
 const app = express();
 app.use(compression())
+app.use(cors())
+
+const origin = port === 5000 ? 'http://localhost:3000' : 'https://chess-wda.herokuapp.com/'
+
 const server = app.listen(port);
-const io = socketIo.listen(server);
+const io = new Server(server, {
+    cors: {
+        origin: origin,
+        methods: ["GET", "POST"]
+    }
+});
+io.listen(server);
 
 let users = {};
 let gameNumber = 1;
 let rooms = [];
 let timers = {};
-
-app.use(cors())
 
 let getRandomInt = (max) => {
     return Math.floor(Math.random() * Math.floor(max))+1;
@@ -69,15 +76,15 @@ io.on('connection', (client) => {
             stopTimer(client.id)
             delete users[client.id]
             io.emit('updateUsers', Object.values(users))
-
         }
     })
 
     client.on('initiateStartGame', id => {
         rooms.push('room' + gameNumber)
         gameNumber += 1
-        io.sockets.connected[id].join(rooms[rooms.length-1]);
-        io.sockets.connected[client.id].join(rooms[rooms.length-1]);
+
+        io.sockets.sockets.get(id).join(rooms[rooms.length-1]);
+        io.sockets.sockets.get(client.id).join(rooms[rooms.length-1]);
 
         users[id].playerNumber = getRandomInt(2)
         users[client.id].playerNumber = users[id].playerNumber === 1 ? 2 : 1
@@ -150,6 +157,8 @@ io.on('connection', (client) => {
     })
 
     client.on('gameEnded', () => {
+        stopTimer(client.id)
+        stopTimer(users[client.id].opponentId)
         users[client.id].gameEnded = true
         users[users[client.id].opponentId].gameEnded = true
     })
@@ -167,7 +176,7 @@ io.on('connection', (client) => {
         client.to(users[client.id].currentRoom).emit('userLeftGame', gameEnded)
         stopTimer(client.id)
         stopTimer(users[client.id].opponentId)
-        io.sockets.connected[client.id].leave(users[client.id].currentRoom)
+        io.sockets.sockets.get(client.id).leave(users[client.id].currentRoom)
         users[client.id].time = null
         users[client.id].inPlay = false
         users[client.id].currentRoom = null
