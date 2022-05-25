@@ -9,7 +9,7 @@ const app = express();
 app.use(compression())
 app.use(cors())
 
-const origin = port === 5000 ? 'http://localhost:3000' : 'https://chess-wda.herokuapp.com/'
+const origin = port === 5000 ? 'http://localhost:3000' : 'https://chess-wda.herokuapp.com'
 
 const server = app.listen(port);
 const io = new Server(server, {
