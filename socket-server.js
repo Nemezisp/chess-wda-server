@@ -64,6 +64,11 @@ io.on('connection', (client) => {
         io.emit('updateUsers', Object.values(users))
     })
 
+    client.on('updateUsername', (username) => {
+        users[client.id] = {...users[client.id], 'username': username}
+        io.emit('updateUsers', Object.values(users))
+    })
+
     client.on('disconnect', () => {
         if (users[client.id]) {
             if (users[client.id].currentRoom) {
