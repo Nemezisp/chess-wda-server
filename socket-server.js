@@ -59,13 +59,18 @@ let stopTimer = (id) => {
 io.on('connection', (client) => {
     client.on('registration', (username, armyName, pieceNames, prefferedTime) => {
         users[client.id] = {'username': username, 'army': armyName, 'pieces' : pieceNames, 'inPlay' : false, 'id' : client.id,
-                            'prefferedTime' : prefferedTime}
+                            'prefferedTime' : prefferedTime, 'challengeFrom': null, 'challengeTo': null}
         io.to(client.id).emit('register', client.id, username, prefferedTime)
         io.emit('updateUsers', Object.values(users))
     })
 
     client.on('updateUsername', (username) => {
-        users[client.id] = {...users[client.id], 'username': username}
+        users[client.id].username = username;
+        io.emit('updateUsers', Object.values(users))
+    })
+
+    client.on('leaveLobby', () => {
+        delete users[client.id]
         io.emit('updateUsers', Object.values(users))
     })
 
@@ -78,10 +83,41 @@ io.on('connection', (client) => {
                     stopTimer(users[client.id].opponentId)
                 }
             }
+            if (users[client.id].challengeFrom) {
+                const challengedId = users[client.id].challengeFrom
+                users[challengedId].challengeTo = null
+                client.to(challengedId).emit('challengeDeclined')
+            }
+            if (users[client.id].challengeTo) {
+                const challengedId = users[client.id].challengeTo
+                users[challengedId].challengeFrom = null
+                client.to(challengedId).emit('challengeCancelled')
+            }
             stopTimer(client.id)
             delete users[client.id]
             io.emit('updateUsers', Object.values(users))
         }
+    })
+
+    client.on('issueChallenge', id => {
+        client.to(id).emit('challengeIssued', client.id)
+        users[client.id].challengeTo = id;
+        users[id].challengeFrom = client.id;
+        io.emit('updateUsers', Object.values(users))
+    })
+
+    client.on('cancelChallenge', id => {
+        client.to(id).emit('challengeCancelled')
+        users[client.id].challengeTo= null;
+        users[id].challengeFrom = null;
+        io.emit('updateUsers', Object.values(users))
+    })
+
+    client.on('declineChallenge', id => {
+        client.to(id).emit('challengeDeclined')
+        users[client.id].challengeFrom = null;
+        users[id].challengeTo = null;
+        io.emit('updateUsers', Object.values(users))
     })
 
     client.on('initiateStartGame', id => {
@@ -90,7 +126,11 @@ io.on('connection', (client) => {
 
         io.sockets.sockets.get(id).join(rooms[rooms.length-1]);
         io.sockets.sockets.get(client.id).join(rooms[rooms.length-1]);
-
+    
+        users[id].challengeFrom = null;
+        users[client.id].challengeFrom = null;
+        users[id].challengeTo = null;
+        users[client.id].challengeTo = null;
         users[id].playerNumber = getRandomInt(2)
         users[client.id].playerNumber = users[id].playerNumber === 1 ? 2 : 1
         users[id].time = users[id].prefferedTime
